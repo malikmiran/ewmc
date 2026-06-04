@@ -1,0 +1,571 @@
+```html
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiFlash</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .perspective { perspective: 1000px; }
+        .preserve-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        .transition-transform-3d { transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans transition-colors duration-200 min-h-full flex flex-col">
+
+    <!-- Navbar -->
+    <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-4 py-3.5 flex items-center justify-between">
+            <div class="flex items-center space-x-2.5">
+                <div class="p-2 bg-primary-100 dark:bg-primary-900/30 text-primary-600 rounded-lg">
+                    <i data-lucide="brain-circuit" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-slate-900 dark:text-white leading-none">MiFlash</h1>
+                    <span class="text-[10px] text-slate-500 dark:text-slate-400">Dynamic Study Hub</span>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2">
+                <button id="themeToggle" class="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition">
+                    <i data-lucide="sun" id="sunIcon" class="w-5 h-5 hidden"></i>
+                    <i data-lucide="moon" id="moonIcon" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="max-w-4xl w-full mx-auto px-4 py-6 flex-grow flex flex-col gap-6">
+        
+        <!-- Deck Selector & Stats Bar -->
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200/80 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select Deck</label>
+                <div class="flex flex-wrap gap-2" id="deckSelector">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+            <div class="flex items-center gap-3 self-end sm:self-center border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-100 dark:border-slate-700">
+                <div class="text-right">
+                    <div class="text-[10px] font-semibold text-slate-400 uppercase">Mastery Progress</div>
+                    <div class="text-sm font-bold text-slate-700 dark:text-slate-200" id="progressText">0% (0/0)</div>
+                </div>
+                <button id="resetProgress" class="p-2 text-slate-400 hover:text-red-500 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition" title="Reset current progress">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Flashcard View -->
+        <div id="cardView" class="flex-grow flex flex-col justify-center min-h-[350px] space-y-4">
+            
+            <!-- Index & Keyboard Help -->
+            <div class="flex justify-between items-center text-xs font-medium text-slate-400">
+                <span id="cardIndicator">Card 0 of 0</span>
+                <span class="hidden md:inline-flex items-center gap-1.5">
+                    <span class="bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded text-[10px] shadow-sm">Space</span> Flip
+                    <span class="bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded text-[10px] shadow-sm">←</span>
+                    <span class="bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded text-[10px] shadow-sm">→</span> Move
+                </span>
+            </div>
+
+            <!-- The Card -->
+            <div id="cardContainer" class="perspective w-full h-[320px] sm:h-[350px] cursor-pointer group select-none">
+                <div id="cardFlipper" class="preserve-3d transition-transform-3d w-full h-full relative rounded-2xl shadow-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+                    
+                    <!-- FRONT -->
+                    <div class="backface-hidden w-full h-full absolute p-6 flex flex-col justify-between">
+                        <div class="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            <span>Question / Concept</span>
+                            <button id="starBtnFront" class="p-1.5 -m-1.5 text-slate-300 dark:text-slate-600 hover:scale-110 transition">
+                                <i data-lucide="star" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                        <div class="flex-grow flex items-center justify-center text-center px-4 overflow-y-auto">
+                            <h2 id="textFront" class="text-xl sm:text-2xl font-extrabold text-slate-800 dark:text-white leading-snug max-w-full">
+                                Loading cards...
+                            </h2>
+                        </div>
+                        <div class="text-center text-[10px] text-slate-400 font-medium">
+                            Tap Card to Reveal Answer
+                        </div>
+                    </div>
+
+                    <!-- BACK -->
+                    <div class="backface-hidden rotate-y-180 w-full h-full absolute p-6 flex flex-col justify-between border-2 border-primary-500 dark:border-primary-600 bg-slate-50 dark:bg-slate-800/95 rounded-2xl">
+                        <div class="flex justify-between items-center text-[10px] font-bold text-primary-500 uppercase tracking-wider">
+                            <span>Answer / Definition</span>
+                            <button id="starBtnBack" class="p-1.5 -m-1.5 text-slate-300 dark:text-slate-600 hover:scale-110 transition">
+                                <i data-lucide="star" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                        <div class="flex-grow flex items-center justify-center text-left px-2 overflow-y-auto my-3">
+                            <p id="textBack" class="text-sm sm:text-base text-slate-700 dark:text-slate-200 leading-relaxed max-w-full">
+                                Definition content...
+                            </p>
+                        </div>
+                        <!-- Quick actions -->
+                        <div class="flex gap-2 border-t border-slate-200/60 dark:border-slate-700/60 pt-3">
+                            <button id="keepStudyingBtn" class="flex-1 py-2 px-3 text-xs font-semibold bg-slate-200/60 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition flex items-center justify-center gap-1.5">
+                                <i data-lucide="help-circle" class="w-3.5 h-3.5"></i> Still Study
+                            </button>
+                            <button id="masteredBtn" class="flex-1 py-2 px-3 text-xs font-semibold bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition flex items-center justify-center gap-1.5">
+                                <i data-lucide="check" class="w-3.5 h-3.5"></i> Mastered
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Nav Controls -->
+            <div class="flex items-center gap-3">
+                <button id="prevBtn" class="flex-1 py-2.5 px-4 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm font-semibold text-xs text-slate-600 dark:text-slate-300 transition flex items-center justify-center gap-2">
+                    <i data-lucide="chevron-left" class="w-4 h-4"></i> Previous
+                </button>
+                <button id="shuffleBtn" class="p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition" title="Shuffle Deck">
+                    <i data-lucide="shuffle" class="w-4 h-4"></i>
+                </button>
+                <button id="nextBtn" class="flex-1 py-2.5 px-4 bg-primary-600 text-white hover:bg-primary-700 rounded-xl shadow-sm font-semibold text-xs transition flex items-center justify-center gap-2">
+                    Next <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-auto border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 py-4 text-center text-[11px] text-slate-400">
+        <p>&copy; 2026 MiFlash. Powered by GitHub dynamic CSV fetch.</p>
+    </footer>
+
+    <script>
+        // Expected CSV relative paths on your GitHub Pages repo
+        const DECKS = {
+            "Patho hemat": { name: "Pathology Hematology", url: "Patho hemat.csv", cards: [] },
+            "Comed t1": { name: "Community Medicine T1", url: "Comed t1.csv", cards: [] },
+            "Patho gen": { name: "General Pathology", url: "Patho gen.csv", cards: [] }
+        };
+
+        let currentDeckKey = "Patho hemat";
+        let currentIndex = 0;
+        let isFlipped = false;
+
+        // Progress Tracking (stored locally)
+        let userProgress = {}; // { [deckKey]: { starred: [], mastered: [] } }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadProgressFromStorage();
+            renderDeckButtons();
+            initThemes();
+            fetchAllDecks();
+            setupEvents();
+        });
+
+        // Initialize user session storage
+        function loadProgressFromStorage() {
+            try {
+                const stored = localStorage.getItem('miflash_progress');
+                if (stored) {
+                    userProgress = JSON.parse(stored);
+                }
+            } catch(e) {
+                console.error("Local storage error", e);
+            }
+        }
+
+        function saveProgressToStorage() {
+            try {
+                localStorage.setItem('miflash_progress', JSON.stringify(userProgress));
+                updateDeckStats();
+            } catch(e) {
+                console.error("Could not write progress", e);
+            }
+        }
+
+        // Render selector buttons
+        function renderDeckButtons() {
+            const container = document.getElementById('deckSelector');
+            container.innerHTML = '';
+            
+            Object.keys(DECKS).forEach(key => {
+                const deck = DECKS[key];
+                const isActive = key === currentDeckKey;
+                const btn = document.createElement('button');
+                btn.className = `px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                    isActive 
+                    ? 'bg-primary-500 text-white shadow-sm' 
+                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                }`;
+                btn.textContent = deck.name;
+                btn.onclick = () => selectDeck(key);
+                container.appendChild(btn);
+            });
+        }
+
+        function selectDeck(key) {
+            currentDeckKey = key;
+            currentIndex = 0;
+            isFlipped = false;
+            renderDeckButtons();
+            renderActiveCard();
+            updateDeckStats();
+        }
+
+        // Fetch all 3 CSVs on load
+        function fetchAllDecks() {
+            const fetchPromises = Object.keys(DECKS).map(key => {
+                const deck = DECKS[key];
+                // URL-encode files with spaces for safety
+                const encodedUrl = encodeURIComponent(deck.url).replace(/%20/g, '%20');
+                
+                return fetch(encodedUrl)
+                    .then(res => {
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        return res.text();
+                    })
+                    .then(text => {
+                        deck.cards = parseCSV(text);
+                        console.log(`Loaded ${deck.cards.length} cards from ${deck.url}`);
+                    })
+                    .catch(err => {
+                        console.warn(`Fetch failed for ${deck.url}.`, err);
+                    });
+            });
+
+            Promise.all(fetchPromises).finally(() => {
+                selectDeck(currentDeckKey);
+                lucide.createIcons();
+            });
+        }
+
+        // CSV line parser
+        function parseCSV(text) {
+            const lines = text.split(/\r?\n/);
+            if (lines.length < 2) return [];
+
+            // Find headers
+            const headers = parseCSVLine(lines[0]);
+            let frontIdx = 0;
+            let backIdx = 1;
+
+            for (let i = 0; i < headers.length; i++) {
+                const h = headers[i].trim().toLowerCase();
+                if (h === 'front' || h === 'term' || h === 'question') frontIdx = i;
+                if (h === 'back' || h === 'definition' || h === 'answer') backIdx = i;
+            }
+
+            const cards = [];
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+
+                const cols = parseCSVLine(line);
+                if (cols.length < 2) continue;
+
+                const frontVal = (cols[frontIdx] || '').trim();
+                const backVal = (cols[backIdx] || '').trim();
+
+                if (frontVal && backVal) {
+                    cards.push({
+                        front: cleanCSVQuotes(frontVal),
+                        back: cleanCSVQuotes(backVal)
+                    });
+                }
+            }
+            return cards;
+        }
+
+        function parseCSVLine(line) {
+            let row = [];
+            let inQuotes = false;
+            let current = '';
+            for (let i = 0; i < line.length; i++) {
+                let char = line[i];
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    row.push(current);
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            row.push(current);
+            return row;
+        }
+
+        function cleanCSVQuotes(str) {
+            return str.replace(/^"|"$/g, '').replace(/""/g, '"');
+        }
+
+        // Display current card details
+        function renderActiveCard() {
+            const deck = DECKS[currentDeckKey];
+            const cardFlipper = document.getElementById('cardFlipper');
+            
+            if (isFlipped) {
+                cardFlipper.classList.add('rotate-y-180');
+            } else {
+                cardFlipper.classList.remove('rotate-y-180');
+            }
+
+            if (!deck || !deck.cards || deck.cards.length === 0) {
+                document.getElementById('textFront').textContent = "Cards are loading or missing...";
+                document.getElementById('textBack').textContent = "Make sure your CSV files are uploaded in the same folder on your GitHub repository.";
+                document.getElementById('cardIndicator').textContent = "Card 0 of 0";
+                return;
+            }
+
+            const card = deck.cards[currentIndex];
+            document.getElementById('textFront').innerHTML = formatMarkdownText(card.front);
+            document.getElementById('textBack').innerHTML = formatMarkdownText(card.back);
+            
+            document.getElementById('cardIndicator').textContent = `Card ${currentIndex + 1} of ${deck.cards.length}`;
+
+            if (!userProgress[currentDeckKey]) {
+                userProgress[currentDeckKey] = { starred: [], mastered: [] };
+            }
+            
+            const isStarred = userProgress[currentDeckKey].starred.includes(card.front);
+            const isMastered = userProgress[currentDeckKey].mastered.includes(card.front);
+
+            const starFront = document.getElementById('starBtnFront');
+            const starBack = document.getElementById('starBtnBack');
+            const masteredBtn = document.getElementById('masteredBtn');
+
+            if (isStarred) {
+                starFront.innerHTML = `<i data-lucide="star" class="w-5 h-5 fill-amber-400 text-amber-400"></i>`;
+                starBack.innerHTML = `<i data-lucide="star" class="w-5 h-5 fill-amber-400 text-amber-400"></i>`;
+            } else {
+                starFront.innerHTML = `<i data-lucide="star" class="w-5 h-5 text-slate-300 dark:text-slate-600"></i>`;
+                starBack.innerHTML = `<i data-lucide="star" class="w-5 h-5 text-slate-300 dark:text-slate-600"></i>`;
+            }
+
+            if (isMastered) {
+                masteredBtn.innerHTML = `<i data-lucide="check-circle" class="w-3.5 h-3.5 fill-emerald-100 text-emerald-700"></i> Active Mastered`;
+                masteredBtn.className = "flex-1 py-2 px-3 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition flex items-center justify-center gap-1.5";
+            } else {
+                masteredBtn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i> Mastered`;
+                masteredBtn.className = "flex-1 py-2 px-3 text-xs font-semibold bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition flex items-center justify-center gap-1.5";
+            }
+
+            lucide.createIcons();
+        }
+
+        function formatMarkdownText(text) {
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/\\n|\n/g, '<br>');
+        }
+
+        function updateDeckStats() {
+            const deck = DECKS[currentDeckKey];
+            if (!deck || !deck.cards || deck.cards.length === 0) {
+                document.getElementById('progressText').textContent = "0% (0/0)";
+                return;
+            }
+
+            if (!userProgress[currentDeckKey]) {
+                userProgress[currentDeckKey] = { starred: [], mastered: [] };
+            }
+
+            const total = deck.cards.length;
+            const masteredCount = userProgress[currentDeckKey].mastered.length;
+            const percentage = total > 0 ? Math.round((masteredCount / total) * 100) : 0;
+
+            document.getElementById('progressText').textContent = `${percentage}% (${masteredCount}/${total})`;
+        }
+
+        function setupEvents() {
+            const cardContainer = document.getElementById('cardContainer');
+
+            // Flip Card on press
+            cardContainer.addEventListener('click', (e) => {
+                if (e.target.closest('#starBtnFront') || e.target.closest('#starBtnBack') || e.target.closest('#keepStudyingBtn') || e.target.closest('#masteredBtn')) {
+                    return;
+                }
+                toggleFlip();
+            });
+
+            document.getElementById('nextBtn').addEventListener('click', handleNext);
+            document.getElementById('prevBtn').addEventListener('click', handlePrev);
+            document.getElementById('shuffleBtn').addEventListener('click', handleShuffle);
+
+            document.getElementById('masteredBtn').addEventListener('click', handleToggleMastery);
+            document.getElementById('keepStudyingBtn').addEventListener('click', () => {
+                const deck = DECKS[currentDeckKey];
+                if (deck && deck.cards[currentIndex]) {
+                    const front = deck.cards[currentIndex].front;
+                    const idx = userProgress[currentDeckKey].mastered.indexOf(front);
+                    if (idx > -1) {
+                        userProgress[currentDeckKey].mastered.splice(idx, 1);
+                        saveProgressToStorage();
+                        renderActiveCard();
+                    }
+                }
+                handleNext();
+            });
+
+            const starToggle = () => {
+                const deck = DECKS[currentDeckKey];
+                if (!deck || !deck.cards[currentIndex]) return;
+                const front = deck.cards[currentIndex].front;
+                const list = userProgress[currentDeckKey].starred;
+                const idx = list.indexOf(front);
+                if (idx > -1) {
+                    list.splice(idx, 1);
+                } else {
+                    list.push(front);
+                }
+                saveProgressToStorage();
+                renderActiveCard();
+            };
+
+            document.getElementById('starBtnFront').addEventListener('click', starToggle);
+            document.getElementById('starBtnBack').addEventListener('click', starToggle);
+
+            document.getElementById('resetProgress').addEventListener('click', () => {
+                if (confirm(`Reset all mastered stats for ${DECKS[currentDeckKey].name}?`)) {
+                    userProgress[currentDeckKey] = { starred: [], mastered: [] };
+                    saveProgressToStorage();
+                    renderActiveCard();
+                }
+            });
+
+            // Keyboard navigation
+            document.addEventListener('keydown', (e) => {
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    toggleFlip();
+                } else if (e.key === 'ArrowRight') {
+                    handleNext();
+                } else if (e.key === 'ArrowLeft') {
+                    handlePrev();
+                }
+            });
+
+            // Touch Swipe Support
+            let touchStart = 0;
+            cardContainer.addEventListener('touchstart', (e) => {
+                touchStart = e.changedTouches[0].screenX;
+            }, { passive: true });
+
+            cardContainer.addEventListener('touchend', (e) => {
+                const diff = e.changedTouches[0].screenX - touchStart;
+                if (diff < -50) {
+                    handleNext();
+                } else if (diff > 50) {
+                    handlePrev();
+                }
+            }, { passive: true });
+        }
+
+        function toggleFlip() {
+            isFlipped = !isFlipped;
+            renderActiveCard();
+        }
+
+        function handleNext() {
+            const deck = DECKS[currentDeckKey];
+            if (!deck || deck.cards.length <= 1) return;
+            isFlipped = false;
+            currentIndex = (currentIndex + 1) % deck.cards.length;
+            renderActiveCard();
+        }
+
+        function handlePrev() {
+            const deck = DECKS[currentDeckKey];
+            if (!deck || deck.cards.length <= 1) return;
+            isFlipped = false;
+            currentIndex = (currentIndex - 1 + deck.cards.length) % deck.cards.length;
+            renderActiveCard();
+        }
+
+        function handleShuffle() {
+            const deck = DECKS[currentDeckKey];
+            if (!deck || deck.cards.length <= 1) return;
+            for (let i = deck.cards.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck.cards[i], deck.cards[j]] = [deck.cards[j], deck.cards[i]];
+            }
+            currentIndex = 0;
+            isFlipped = false;
+            renderActiveCard();
+        }
+
+        function handleToggleMastery() {
+            const deck = DECKS[currentDeckKey];
+            if (!deck || !deck.cards[currentIndex]) return;
+            const front = deck.cards[currentIndex].front;
+            const list = userProgress[currentDeckKey].mastered;
+            const idx = list.indexOf(front);
+            if (idx > -1) {
+                list.splice(idx, 1);
+            } else {
+                list.push(front);
+                setTimeout(() => {
+                    handleNext();
+                }, 300);
+            }
+            saveProgressToStorage();
+            renderActiveCard();
+        }
+
+        function initThemes() {
+            const themeToggle = document.getElementById('themeToggle');
+            const sunIcon = document.getElementById('sunIcon');
+            const moonIcon = document.getElementById('moonIcon');
+
+            function applyTheme(isDark) {
+                if (isDark) {
+                    document.documentElement.classList.add('dark');
+                    sunIcon.classList.remove('hidden');
+                    moonIcon.classList.add('hidden');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    sunIcon.classList.add('hidden');
+                    moonIcon.classList.remove('hidden');
+                }
+            }
+
+            let isDarkSystem = localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            applyTheme(isDarkSystem);
+
+            themeToggle.addEventListener('click', () => {
+                const isCurrentlyDark = document.documentElement.classList.contains('dark');
+                localStorage.setItem('theme', isCurrentlyDark ? 'light' : 'dark');
+                applyTheme(!isCurrentlyDark);
+            });
+        }
+    </script>
+</body>
+</html>
+
+```
