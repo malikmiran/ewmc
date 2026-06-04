@@ -31,25 +31,41 @@
         .preserve-3d { transform-style: preserve-3d; }
         .backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
         .rotate-y-180 { transform: rotateY(180deg); }
-        .transition-transform-3d { transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        /* Transition timing toggle classes */
+        .transition-transform-3d { 
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+        .no-animation {
+            transition: none !important;
+        }
     </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans transition-colors duration-200 min-h-full flex flex-col">
 
     <!-- Navbar -->
     <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50">
-        <div class="max-w-4xl mx-auto px-4 py-3.5 flex items-center justify-between">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+            <!-- App Identity -->
             <div class="flex items-center space-x-2.5">
                 <div class="p-2 bg-primary-100 dark:bg-primary-900/30 text-primary-600 rounded-lg">
                     <i data-lucide="brain-circuit" class="w-5 h-5"></i>
                 </div>
                 <div>
-                    <h1 class="text-lg font-bold text-slate-900 dark:text-white leading-none">MiFlash</h1>
-                    <span class="text-[10px] text-slate-500 dark:text-slate-400">Dynamic Study Hub</span>
+                    <h1 class="text-xl font-black text-slate-900 dark:text-white tracking-tight">MiFlash</h1>
                 </div>
             </div>
 
-            <div class="flex items-center space-x-2">
+            <!-- Header Actions -->
+            <div class="flex items-center space-x-3">
+                <!-- CSV custom deck importer button -->
+                <label for="customCsvInput" class="cursor-pointer px-3 py-1.5 bg-primary-100 hover:bg-primary-200 dark:bg-primary-950/40 dark:hover:bg-primary-900/60 text-primary-700 dark:text-primary-300 rounded-lg transition flex items-center gap-1.5 text-xs font-black tracking-wider uppercase border border-primary-200/50 dark:border-primary-800/50" title="Import Custom CSV Deck">
+                    <i data-lucide="file-up" class="w-4 h-4 text-primary-600 dark:text-primary-400"></i>
+                    <span>IMPORT</span>
+                </label>
+                <input type="file" id="customCsvInput" accept=".csv" class="hidden" />
+
+                <!-- Theme Toggle -->
                 <button id="themeToggle" class="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition">
                     <i data-lucide="sun" id="sunIcon" class="w-5 h-5 hidden"></i>
                     <i data-lucide="moon" id="moonIcon" class="w-5 h-5"></i>
@@ -69,11 +85,19 @@
                     <!-- Loaded dynamically -->
                 </div>
             </div>
-            <div class="flex items-center gap-3 self-end sm:self-center border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-100 dark:border-slate-700">
+            
+            <div class="flex items-center gap-4 self-end sm:self-center border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-100 dark:border-slate-700">
+                <!-- Instant Transition toggle -->
+                <button id="animToggleBtn" class="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 transition text-slate-600 dark:text-slate-300">
+                    <i data-lucide="zap" class="w-3.5 h-3.5" id="animZapIcon"></i>
+                    <span id="animToggleText">Instant Flip</span>
+                </button>
+
                 <div class="text-right">
-                    <div class="text-[10px] font-semibold text-slate-400 uppercase">Mastery Progress</div>
+                    <div class="text-[10px] font-semibold text-slate-400 uppercase">Mastery</div>
                     <div class="text-sm font-bold text-slate-700 dark:text-slate-200" id="progressText">0% (0/0)</div>
                 </div>
+                
                 <button id="resetProgress" class="p-2 text-slate-400 hover:text-red-500 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition" title="Reset current progress">
                     <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
                 </button>
@@ -99,11 +123,8 @@
                     
                     <!-- FRONT -->
                     <div class="backface-hidden w-full h-full absolute p-6 flex flex-col justify-between">
-                        <div class="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            <span>Question / Concept</span>
-                            <button id="starBtnFront" class="p-1.5 -m-1.5 text-slate-300 dark:text-slate-600 hover:scale-110 transition">
-                                <i data-lucide="star" class="w-5 h-5"></i>
-                            </button>
+                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Question / Concept
                         </div>
                         <div class="flex-grow flex items-center justify-center text-center px-4 overflow-y-auto">
                             <h2 id="textFront" class="text-xl sm:text-2xl font-extrabold text-slate-800 dark:text-white leading-snug max-w-full">
@@ -117,18 +138,15 @@
 
                     <!-- BACK -->
                     <div class="backface-hidden rotate-y-180 w-full h-full absolute p-6 flex flex-col justify-between border-2 border-primary-500 dark:border-primary-600 bg-slate-50 dark:bg-slate-800/95 rounded-2xl">
-                        <div class="flex justify-between items-center text-[10px] font-bold text-primary-500 uppercase tracking-wider">
-                            <span>Answer / Definition</span>
-                            <button id="starBtnBack" class="p-1.5 -m-1.5 text-slate-300 dark:text-slate-600 hover:scale-110 transition">
-                                <i data-lucide="star" class="w-5 h-5"></i>
-                            </button>
+                        <div class="text-[10px] font-bold text-primary-500 uppercase tracking-wider">
+                            Answer / Definition
                         </div>
                         <div class="flex-grow flex items-center justify-center text-left px-2 overflow-y-auto my-3">
                             <p id="textBack" class="text-sm sm:text-base text-slate-700 dark:text-slate-200 leading-relaxed max-w-full">
                                 Definition content...
                             </p>
                         </div>
-                        <!-- Quick actions -->
+                        <!-- Actions -->
                         <div class="flex gap-2 border-t border-slate-200/60 dark:border-slate-700/60 pt-3">
                             <button id="keepStudyingBtn" class="flex-1 py-2 px-3 text-xs font-semibold bg-slate-200/60 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition flex items-center justify-center gap-1.5">
                                 <i data-lucide="help-circle" class="w-3.5 h-3.5"></i> Still Study
@@ -159,8 +177,16 @@
     </main>
 
     <!-- Footer -->
-    <footer class="mt-auto border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 py-4 text-center text-[11px] text-slate-400">
-        <p>&copy; miran.xqc</p>
+    <footer class="mt-auto border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 py-4 px-4">
+        <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5 text-[11px] text-slate-400">
+            <div>
+                <p>&copy; miran.xqc</p>
+            </div>
+            <div class="flex items-center space-x-2 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-full border border-slate-200/50 dark:border-slate-700/50 font-medium text-slate-500 dark:text-slate-300">
+                <i data-lucide="users" class="w-3.5 h-3.5 text-primary-500"></i>
+                <span>Visits: <strong id="visitorCount">Loading...</strong></span>
+            </div>
+        </div>
     </footer>
 
     <script>
@@ -174,9 +200,10 @@
         let currentDeckKey = "Patho hemat";
         let currentIndex = 0;
         let isFlipped = false;
+        let disableAnimation = false;
 
         // Progress Tracking (stored locally)
-        let userProgress = {}; // { [deckKey]: { starred: [], mastered: [] } }
+        let userProgress = {}; // { [deckKey]: { mastered: [] } }
 
         window.addEventListener('DOMContentLoaded', () => {
             loadProgressFromStorage();
@@ -184,6 +211,7 @@
             initThemes();
             fetchAllDecks();
             setupEvents();
+            fetchVisitorCount();
         });
 
         // Initialize user session storage
@@ -192,6 +220,11 @@
                 const stored = localStorage.getItem('miflash_progress');
                 if (stored) {
                     userProgress = JSON.parse(stored);
+                }
+                const savedAnimMode = localStorage.getItem('miflash_disable_anim');
+                if (savedAnimMode === 'true') {
+                    disableAnimation = true;
+                    applyAnimationConfig();
                 }
             } catch(e) {
                 console.error("Local storage error", e);
@@ -205,6 +238,34 @@
             } catch(e) {
                 console.error("Could not write progress", e);
             }
+        }
+
+        // Fetch live visitors gracefully from the api
+        function fetchVisitorCount() {
+            const displayEl = document.getElementById('visitorCount');
+            const localKey = 'miflash_local_visit_count';
+            
+            // Default baseline configuration starts cleanly at 1
+            let currentLocalCount = parseInt(localStorage.getItem(localKey) || '1');
+            currentLocalCount += 1;
+            localStorage.setItem(localKey, currentLocalCount.toString());
+
+            // Make request to hit-counter API
+            fetch('https://api.counterapi.dev/v1/miflash_github_pages/visits/increment')
+                .then(res => {
+                    if (!res.ok) throw new Error();
+                    return res.json();
+                })
+                .then(data => {
+                    if (data && data.value) {
+                        displayEl.textContent = data.value.toLocaleString();
+                    } else {
+                        displayEl.textContent = currentLocalCount.toLocaleString();
+                    }
+                })
+                .catch(() => {
+                    displayEl.textContent = currentLocalCount.toLocaleString();
+                });
         }
 
         // Render selector buttons
@@ -240,7 +301,6 @@
         function fetchAllDecks() {
             const fetchPromises = Object.keys(DECKS).map(key => {
                 const deck = DECKS[key];
-                // URL-encode files with spaces for safety
                 const encodedUrl = encodeURIComponent(deck.url).replace(/%20/g, '%20');
                 
                 return fetch(encodedUrl)
@@ -250,10 +310,9 @@
                     })
                     .then(text => {
                         deck.cards = parseCSV(text);
-                        console.log(`Loaded ${deck.cards.length} cards from ${deck.url}`);
                     })
                     .catch(err => {
-                        console.warn(`Fetch failed for ${deck.url}.`, err);
+                        console.warn(`Could not fetch ${deck.url}. Probably running in local storage context.`, err);
                     });
             });
 
@@ -263,12 +322,11 @@
             });
         }
 
-        // CSV line parser
+        // CSV Parser
         function parseCSV(text) {
             const lines = text.split(/\r?\n/);
             if (lines.length < 2) return [];
 
-            // Find headers
             const headers = parseCSVLine(lines[0]);
             let frontIdx = 0;
             let backIdx = 1;
@@ -335,8 +393,8 @@
             }
 
             if (!deck || !deck.cards || deck.cards.length === 0) {
-                document.getElementById('textFront').textContent = "Cards are loading or missing...";
-                document.getElementById('textBack').textContent = "Make sure your CSV files are uploaded in the same folder on your GitHub repository.";
+                document.getElementById('textFront').textContent = "Empty Deck";
+                document.getElementById('textBack').textContent = "Import some custom cards using the IMPORT button in the header, or place your CSV files in this directory.";
                 document.getElementById('cardIndicator').textContent = "Card 0 of 0";
                 return;
             }
@@ -348,26 +406,14 @@
             document.getElementById('cardIndicator').textContent = `Card ${currentIndex + 1} of ${deck.cards.length}`;
 
             if (!userProgress[currentDeckKey]) {
-                userProgress[currentDeckKey] = { starred: [], mastered: [] };
+                userProgress[currentDeckKey] = { mastered: [] };
             }
             
-            const isStarred = userProgress[currentDeckKey].starred.includes(card.front);
             const isMastered = userProgress[currentDeckKey].mastered.includes(card.front);
-
-            const starFront = document.getElementById('starBtnFront');
-            const starBack = document.getElementById('starBtnBack');
             const masteredBtn = document.getElementById('masteredBtn');
 
-            if (isStarred) {
-                starFront.innerHTML = `<i data-lucide="star" class="w-5 h-5 fill-amber-400 text-amber-400"></i>`;
-                starBack.innerHTML = `<i data-lucide="star" class="w-5 h-5 fill-amber-400 text-amber-400"></i>`;
-            } else {
-                starFront.innerHTML = `<i data-lucide="star" class="w-5 h-5 text-slate-300 dark:text-slate-600"></i>`;
-                starBack.innerHTML = `<i data-lucide="star" class="w-5 h-5 text-slate-300 dark:text-slate-600"></i>`;
-            }
-
             if (isMastered) {
-                masteredBtn.innerHTML = `<i data-lucide="check-circle" class="w-3.5 h-3.5 fill-emerald-100 text-emerald-700"></i> Active Mastered`;
+                masteredBtn.innerHTML = `<i data-lucide="check-circle" class="w-3.5 h-3.5 fill-emerald-100 text-emerald-700"></i> Mastered!`;
                 masteredBtn.className = "flex-1 py-2 px-3 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition flex items-center justify-center gap-1.5";
             } else {
                 masteredBtn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i> Mastered`;
@@ -392,7 +438,7 @@
             }
 
             if (!userProgress[currentDeckKey]) {
-                userProgress[currentDeckKey] = { starred: [], mastered: [] };
+                userProgress[currentDeckKey] = { mastered: [] };
             }
 
             const total = deck.cards.length;
@@ -402,12 +448,35 @@
             document.getElementById('progressText').textContent = `${percentage}% (${masteredCount}/${total})`;
         }
 
+        function applyAnimationConfig() {
+            const flipper = document.getElementById('cardFlipper');
+            const toggleText = document.getElementById('animToggleText');
+            const toggleBtn = document.getElementById('animToggleBtn');
+
+            if (disableAnimation) {
+                flipper.classList.add('no-animation');
+                toggleText.textContent = "Instant Flip";
+                toggleBtn.classList.replace('bg-slate-100', 'bg-primary-500');
+                toggleBtn.classList.replace('text-slate-600', 'text-white');
+                toggleBtn.classList.replace('dark:bg-slate-700', 'dark:bg-primary-600');
+                toggleBtn.classList.replace('dark:text-slate-300', 'dark:text-white');
+            } else {
+                flipper.classList.remove('no-animation');
+                toggleText.textContent = "Smooth Flip";
+                toggleBtn.classList.replace('bg-primary-500', 'bg-slate-100');
+                toggleBtn.classList.replace('text-white', 'text-slate-600');
+                toggleBtn.classList.replace('dark:bg-primary-600', 'dark:bg-slate-700');
+                toggleBtn.classList.replace('dark:text-white', 'dark:text-slate-300');
+            }
+            localStorage.setItem('miflash_disable_anim', disableAnimation);
+        }
+
         function setupEvents() {
             const cardContainer = document.getElementById('cardContainer');
 
-            // Flip Card on press
+            // Flip Card on Tap
             cardContainer.addEventListener('click', (e) => {
-                if (e.target.closest('#starBtnFront') || e.target.closest('#starBtnBack') || e.target.closest('#keepStudyingBtn') || e.target.closest('#masteredBtn')) {
+                if (e.target.closest('#keepStudyingBtn') || e.target.closest('#masteredBtn')) {
                     return;
                 }
                 toggleFlip();
@@ -432,33 +501,48 @@
                 handleNext();
             });
 
-            const starToggle = () => {
-                const deck = DECKS[currentDeckKey];
-                if (!deck || !deck.cards[currentIndex]) return;
-                const front = deck.cards[currentIndex].front;
-                const list = userProgress[currentDeckKey].starred;
-                const idx = list.indexOf(front);
-                if (idx > -1) {
-                    list.splice(idx, 1);
-                } else {
-                    list.push(front);
-                }
-                saveProgressToStorage();
-                renderActiveCard();
-            };
-
-            document.getElementById('starBtnFront').addEventListener('click', starToggle);
-            document.getElementById('starBtnBack').addEventListener('click', starToggle);
-
             document.getElementById('resetProgress').addEventListener('click', () => {
                 if (confirm(`Reset all mastered stats for ${DECKS[currentDeckKey].name}?`)) {
-                    userProgress[currentDeckKey] = { starred: [], mastered: [] };
+                    userProgress[currentDeckKey] = { mastered: [] };
                     saveProgressToStorage();
                     renderActiveCard();
                 }
             });
 
-            // Keyboard navigation
+            // Toggle flip animation event
+            document.getElementById('animToggleBtn').addEventListener('click', () => {
+                disableAnimation = !disableAnimation;
+                applyAnimationConfig();
+            });
+
+            // Custom CSV Deck Importer action
+            document.getElementById('customCsvInput').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    const parsed = parseCSV(evt.target.result);
+                    if (parsed.length > 0) {
+                        const customDeckKey = "imported_" + Date.now();
+                        const cleanName = file.name.replace('.csv', '');
+                        
+                        DECKS[customDeckKey] = {
+                            name: cleanName,
+                            url: "",
+                            cards: parsed
+                        };
+                        
+                        renderDeckButtons();
+                        selectDeck(customDeckKey);
+                    } else {
+                        alert("We couldn't read cards from this CSV. Make sure headers are either 'Front,Back' or 'Term,Definition'.");
+                    }
+                };
+                reader.readAsText(file);
+            });
+
+            // Keyboard shortcut action list
             document.addEventListener('keydown', (e) => {
                 if (e.code === 'Space') {
                     e.preventDefault();
@@ -470,7 +554,7 @@
                 }
             });
 
-            // Touch Swipe Support
+            // Touch Swipe setup
             let touchStart = 0;
             cardContainer.addEventListener('touchstart', (e) => {
                 touchStart = e.changedTouches[0].screenX;
@@ -478,9 +562,9 @@
 
             cardContainer.addEventListener('touchend', (e) => {
                 const diff = e.changedTouches[0].screenX - touchStart;
-                if (diff < -50) {
+                if (diff < -55) {
                     handleNext();
-                } else if (diff > 50) {
+                } else if (diff > 55) {
                     handlePrev();
                 }
             }, { passive: true });
@@ -491,6 +575,7 @@
             renderActiveCard();
         }
 
+        // Card navigation handlers
         function handleNext() {
             const deck = DECKS[currentDeckKey];
             if (!deck || deck.cards.length <= 1) return;
